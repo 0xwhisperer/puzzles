@@ -430,45 +430,6 @@
   // Drag & Drop
   let dragSrc = null;
   let touchOver = null; // current tile under finger during touch drag
-  // Long-press touch drag state
-  let lpTimer = null;
-  let lpStartX = 0;
-  let lpStartY = 0;
-  let lpArmedTile = null; // tile where touch started
-  let lpDragging = false; // becomes true once long-press begins dragging
-  let avatarEl = null;    // floating preview under finger
-
-  function createAvatarForTile(tile, atX, atY) {
-    // Build a floating copy using the same CSS-driven background via --x/--y
-    const rect = tile.getBoundingClientRect();
-    const pieceIndex = Number(tile.dataset.piece);
-    const x = pieceIndex % N;
-    const y = Math.floor(pieceIndex / N);
-    const el = document.createElement('div');
-    el.className = 'tile drag-avatar';
-    el.style.setProperty('--n', String(N));
-    el.style.setProperty('--x', String(x));
-    el.style.setProperty('--y', String(y));
-    // Ensure avatar shows the correct puzzle image regardless of parent
-    el.style.backgroundImage = currentImage === 2 ? 'url("./sid2.png")' : 'url("./sid1.png")';
-    el.style.width = rect.width + 'px';
-    el.style.height = rect.height + 'px';
-    el.style.left = atX + 'px';
-    el.style.top = atY + 'px';
-    document.body.appendChild(el);
-    return el;
-  }
-
-  function moveAvatar(x, y) {
-    if (!avatarEl) return;
-    avatarEl.style.left = x + 'px';
-    avatarEl.style.top = y + 'px';
-  }
-
-  function removeAvatar() {
-    if (avatarEl && avatarEl.parentNode) avatarEl.parentNode.removeChild(avatarEl);
-    avatarEl = null;
-  }
 
   function addDnDHandlers(tile) {
     tile.addEventListener('dragstart', onDragStart);
@@ -584,52 +545,26 @@
     dragSrc = null;
   }
 
-  // Touch support (iOS/Android) — long-press start
+  // Touch support (iOS/Android)
   function onTouchStart(e) {
     const t = e.target.closest('.tile');
     if (!t) return;
-    const touch = e.touches && e.touches[0];
-    if (!touch) return;
-    lpStartX = touch.clientX;
-    lpStartY = touch.clientY;
-    lpArmedTile = t;
-    // Arm long-press: begin drag after 300ms if finger stays within threshold
-    clearTimeout(lpTimer);
-    lpTimer = setTimeout(() => {
-      // Begin dragging
-      dragSrc = lpArmedTile;
-      lpDragging = true;
-      dragSrc.classList.add('dragging');
-      // Create avatar at current finger position
-      avatarEl = createAvatarForTile(dragSrc, lpStartX, lpStartY);
-      // Optional haptic feedback
-      if (navigator.vibrate) {
-        try { navigator.vibrate(15); } catch (_) {}
-      }
-      // Reset hover state
-      if (touchOver) touchOver.classList.remove('over');
+    // Prevent the page from scrolling while dragging a piece
+    e.preventDefault();
+    dragSrc = t;
+    t.classList.add('dragging');
+    if (touchOver) {
+      touchOver.classList.remove('over');
       touchOver = null;
-    }, 300);
+    }
   }
 
   function onTouchMove(e) {
+    if (!dragSrc) return;
+    // Prevent scrolling while moving a piece
+    e.preventDefault();
     const touch = e.touches && e.touches[0];
     if (!touch) return;
-    if (!lpDragging) {
-      // Check movement threshold before drag is armed; cancel long-press if moved too far
-      const dx = touch.clientX - lpStartX;
-      const dy = touch.clientY - lpStartY;
-      const dist2 = dx * dx + dy * dy;
-      if (dist2 > 10 * 10) {
-        clearTimeout(lpTimer);
-        lpTimer = null;
-        lpArmedTile = null;
-      }
-      return; // Not yet dragging; allow default scrolling (CSS may still limit it)
-    }
-    // Dragging: prevent page gestures and update avatar/hover
-    e.preventDefault();
-    moveAvatar(touch.clientX, touch.clientY);
     const el = document.elementFromPoint(touch.clientX, touch.clientY);
     const over = el ? el.closest('.tile') : null;
     if (touchOver && touchOver !== over) touchOver.classList.remove('over');
@@ -638,22 +573,13 @@
   }
 
   function onTouchEnd() {
-    clearTimeout(lpTimer);
-    lpTimer = null;
-    lpArmedTile = null;
-    if (!lpDragging) {
-      // It was a tap or short move; no drag happened
-      return;
-    }
-    // A drag was active
+    if (!dragSrc) return;
     const dropTarget = touchOver && touchOver !== dragSrc ? touchOver : null;
     if (touchOver) touchOver.classList.remove('over');
     const src = dragSrc;
     src.classList.remove('dragging');
-    removeAvatar();
     dragSrc = null;
     touchOver = null;
-    lpDragging = false;
     if (!dropTarget) return; // no valid drop
     // Mirror onDrop logic
     pushUndo();
@@ -679,25 +605,17 @@
   }
 
   function onTouchCancel() {
-    clearTimeout(lpTimer);
-    lpTimer = null;
-    lpArmedTile = null;
     if (touchOver) touchOver.classList.remove('over');
     if (dragSrc) dragSrc.classList.remove('dragging');
-    removeAvatar();
     touchOver = null;
     dragSrc = null;
-    lpDragging = false;
   }
 
   // Attach board-level touch listeners once
-  if (!window.__touchHandlersAttached) {
-    board.addEventListener('touchstart', onTouchStart, { passive: false });
-    board.addEventListener('touchmove', onTouchMove, { passive: false });
-    board.addEventListener('touchend', onTouchEnd);
-    board.addEventListener('touchcancel', onTouchCancel);
-    window.__touchHandlersAttached = true;
-  }
+  board.addEventListener('touchstart', onTouchStart, { passive: false });
+  board.addEventListener('touchmove', onTouchMove, { passive: false });
+  board.addEventListener('touchend', onTouchEnd);
+  board.addEventListener('touchcancel', onTouchCancel);
 
   // UI controls
   // Titlebar Back/Next buttons
