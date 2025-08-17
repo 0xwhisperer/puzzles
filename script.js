@@ -1,7 +1,6 @@
 (() => {
   const N = 10; // 10x10 = 100 square pieces
   const board = document.getElementById('board');
-  const shuffleBtn = document.getElementById('shuffleBtn');
   const resetBtn = document.getElementById('resetBtn');
   const previewToggle = document.getElementById('previewToggle');
   const edgeToggle = document.getElementById('edgeToggle');
@@ -296,19 +295,7 @@
     statusEl.textContent = isSolved() ? 'Solved! 🎉' : '';
   }
 
-  function shuffleBoard() {
-    pushUndo();
-    const indices = [...Array(total).keys()];
-    const randomized = shuffleUntilNotSolved(indices);
-    tiles.forEach((tile, pos) => setTilePiece(tile, randomized[pos]));
-    updateJoins();
-    board.classList.remove('solved');
-    updateStatus('Shuffled');
-    setTimeout(() => updateStatus(''), 800);
-    // Reset and start the timer for a new run
-    resetTimer(true);
-    saveState();
-  }
+  // (Shuffle Again removed per UX simplification)
 
   function shuffleUntilNotSolved(indices) {
     let shuffled = indices.slice();
@@ -432,7 +419,6 @@
   }
 
   // UI controls
-  shuffleBtn.addEventListener('click', shuffleBoard);
   previewToggle.addEventListener('change', () => {
     // change fires after checkbox state flips; capture previous state for undo
     const prevSnap = getSnapshot();
