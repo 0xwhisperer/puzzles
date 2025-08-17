@@ -189,6 +189,7 @@ button:disabled:active {
 }
 .board.image-1::after { background-image: url("./sid1.png"); }
 .board.image-2::after { background-image: url("./sid2.png"); }
+.board.image-3::after { background-image: url("./catman.png"); }
 .board.preview::after { opacity: 1; }
 
 /* Tiles */
@@ -208,6 +209,7 @@ button:disabled:active {
 }
 .board.image-1 .tile { background-image: url("./sid1.png"); }
 .board.image-2 .tile { background-image: url("./sid2.png"); }
+.board.image-3 .tile { background-image: url("./catman.png"); }
 
 /* Per-side subtle edges */
 .tile > .frame {
@@ -311,8 +313,16 @@ button:disabled:active {
 }
 
 .tile[draggable="true"] { cursor: grab; }
-.tile.dragging { opacity: 0.9; cursor: grabbing; outline: 2px dashed rgba(110, 164, 255, 0.7); }
-.tile.over { outline: 2px solid rgba(110, 164, 255, 0.8); }
+.tile.dragging {
+  opacity: 0.9;
+  cursor: grabbing;
+  /* Inset ring so all four sides are visible and not occluded by neighbors */
+  box-shadow: 0 0 0 2px rgba(110, 164, 255, 0.7) inset;
+}
+.tile.over {
+  /* Solid, slightly brighter inset ring for the drop target */
+  box-shadow: 0 0 0 2px rgba(110, 164, 255, 0.9) inset;
+}
 
 /* Floating avatar that follows the finger during touch drag */
 .drag-avatar {

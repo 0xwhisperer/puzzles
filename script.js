@@ -30,10 +30,11 @@
   let timerElapsedMs = 0; // accumulated elapsed ms excluding current run segment
 
   // ---- Puzzle progression ----
-  // 1 = sid.png, 2 = sid2.png
-  const TOTAL_PUZZLES = 2; // update if more puzzles are added
+  // 1 = sid1.png, 2 = sid2.png, 3 = catman.png
+  const TOTAL_PUZZLES = 3; // update if more puzzles are added
   let currentImage = 1; // 1-based index
   let unlocked2 = false;
+  let unlocked3 = false;
   let initialized = false; // tracks first-time initialization
 
   function formatTime(ms) {
@@ -155,6 +156,7 @@
         n: N,
         image: currentImage,
         unlocked2: !!unlocked2,
+        unlocked3: !!unlocked3,
         boards,
         // legacy/global timer fields (kept for backward compatibility)
         elapsedMs: elapsed,
@@ -277,6 +279,7 @@
         currentImage = Math.max(1, Math.min(TOTAL_PUZZLES, Number(saved.image) || 1));
       }
       unlocked2 = !!saved.unlocked2;
+      unlocked3 = !!saved.unlocked3;
       const boardState = saved.boards && saved.boards[String(currentImage)];
       if (boardState && Array.isArray(boardState.pieces) && boardState.pieces.length === total) {
         initialPieces = boardState.pieces.slice();
@@ -346,8 +349,10 @@
     }
 
     // Apply image class to board
-    board.classList.remove('image-1', 'image-2');
-    board.classList.add(currentImage === 2 ? 'image-2' : 'image-1');
+    board.classList.remove('image-1', 'image-2', 'image-3');
+    board.classList.add(
+      currentImage === 3 ? 'image-3' : currentImage === 2 ? 'image-2' : 'image-1'
+    );
     // Ensure titlebar nav buttons reflect current progression
     updateNavButtons();
     // Reflect active puzzle in the heading
@@ -461,7 +466,9 @@
 
   function updateTitle() {
     if (!titleEl) return;
-    const which = currentImage === 2 ? 'Sid Puzzle 2' : 'Sid Puzzle 1';
+    let which = 'Sid Puzzle 1';
+    if (currentImage === 2) which = 'Sid Puzzle 2';
+    if (currentImage === 3) which = 'Catman Puzzle';
     titleEl.textContent = `${which} (100 pcs.)`;
   }
 
@@ -545,7 +552,11 @@
       let dur = undefined;
       if (currentImage === 1 && !unlocked2) {
         unlocked2 = true;
-        msg = "Solved. You've unlocked a new puzzle! Click the Next button to see your next puzzle.";
+        msg = "Solved. You've unlocked Puzzle 2! Click Next to continue.";
+        dur = 5000;
+      } else if (currentImage === 2 && !unlocked3) {
+        unlocked3 = true;
+        msg = "Solved. You've unlocked Puzzle 3 (Catman)! Click Next to continue.";
         dur = 5000;
       }
       updateStatus(msg, dur);
@@ -638,7 +649,11 @@
     avatar.style.setProperty('--n', String(N));
     avatar.style.setProperty('--x', tile.style.getPropertyValue('--x'));
     avatar.style.setProperty('--y', tile.style.getPropertyValue('--y'));
-    avatar.style.backgroundImage = currentImage === 2 ? 'url("./sid2.png")' : 'url("./sid1.png")';
+    avatar.style.backgroundImage = (
+      currentImage === 3 ? 'url("./catman.png")' :
+      currentImage === 2 ? 'url("./sid2.png")' :
+      'url("./sid1.png")'
+    );
     avatar.style.width = rect.width + 'px';
     avatar.style.height = rect.height + 'px';
     avatar.style.position = 'fixed';
@@ -699,7 +714,11 @@
       let dur = undefined;
       if (currentImage === 1 && !unlocked2) {
         unlocked2 = true;
-        msg = "Solved. You've unlocked a new puzzle! Click the Next button to see your next puzzle.";
+        msg = "Solved. You've unlocked Puzzle 2! Click Next to continue.";
+        dur = 5000;
+      } else if (currentImage === 2 && !unlocked3) {
+        unlocked3 = true;
+        msg = "Solved. You've unlocked Puzzle 3 (Catman)! Click Next to continue.";
         dur = 5000;
       }
       updateStatus(msg, dur);
@@ -779,8 +798,8 @@
     if (backBtn) backBtn.disabled = currentImage <= 1;
     if (nextBtnTop) {
       const atEnd = currentImage >= TOTAL_PUZZLES;
-      // Only puzzle 2 requires unlock in current design
-      const nextLocked = (currentImage === 1 && !unlocked2);
+      // Stepwise unlocks: 1->2 requires unlocked2, 2->3 requires unlocked3
+      const nextLocked = (currentImage === 1 && !unlocked2) || (currentImage === 2 && !unlocked3);
       nextBtnTop.disabled = atEnd || nextLocked;
       const small = window.innerWidth <= 380;
       const label = nextLocked ? (small ? '🔒' : '🔒 Locked') : 'Next';
@@ -815,7 +834,11 @@
       let dur = undefined;
       if (currentImage === 1 && !unlocked2) {
         unlocked2 = true;
-        msg = "Solved. You've unlocked a new puzzle! Click the Next button to see your next puzzle.";
+        msg = "Solved. You've unlocked Puzzle 2! Click Next to continue.";
+        dur = 5000;
+      } else if (currentImage === 2 && !unlocked3) {
+        unlocked3 = true;
+        msg = "Solved. You've unlocked Puzzle 3 (Catman)! Click Next to continue.";
         dur = 5000;
       }
       updateStatus(msg, dur);
@@ -867,8 +890,8 @@
   if (nextBtnTop) {
     nextBtnTop.addEventListener('click', () => {
       if (currentImage >= TOTAL_PUZZLES) return; // no more puzzles
-      // For current design, only moving 1->2 may be locked
-      if (currentImage === 1 && !unlocked2) return;
+      // Stepwise locks: 1->2 needs unlocked2, 2->3 needs unlocked3
+      if ((currentImage === 1 && !unlocked2) || (currentImage === 2 && !unlocked3)) return;
       pushUndo();
       // Persist current puzzle before switching
       saveState();
