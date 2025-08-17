@@ -158,44 +158,28 @@ button:active { transform: translateY(1px); }
 .tile.sharp-br > .frame { border-bottom-right-radius: 0; }
 .tile.sharp-bl > .frame { border-bottom-left-radius: 0; }
 
-/* Edge helper: draw a bright line only on the outer side(s) of edge pieces */
-.board.edges .tile::before,
-.board.edges .tile::after {
+/* Edge helper: use borders so corners are perfectly rounded and not clipped */
+.board.edges .tile::before {
   content: "";
   position: absolute;
-  inset: 0;
+  inset: 1px; /* pull in slightly so board's rounded mask doesn't cut it */
   pointer-events: none;
   z-index: 3; /* above the full-image guide (z-index:2) */
-  background: none; /* per-side rules below will set background gradients */
+  border-radius: 0; /* straight edges by default */
+  border: 0 solid #ff7a00; /* side widths toggled below */
 }
 
-/* Top/Left sides on ::before */
-.board.edges .tile.edge-top::before {
-  background-image: linear-gradient(to bottom, #ff7a00 3px, transparent 0);
-}
-.board.edges .tile.edge-left::before {
-  background-image: linear-gradient(to right, #ff7a00 3px, transparent 0);
-}
-/* If both top and left, draw both lines */
-.board.edges .tile.edge-top.edge-left::before {
-  background-image:
-    linear-gradient(to bottom, #ff7a00 3px, transparent 0),
-    linear-gradient(to right, #ff7a00 3px, transparent 0);
-}
+/* Toggle only the outer side(s) */
+.board.edges .tile.edge-top::before { border-top-width: 3px; }
+.board.edges .tile.edge-right::before { border-right-width: 3px; }
+.board.edges .tile.edge-bottom::before { border-bottom-width: 3px; }
+.board.edges .tile.edge-left::before { border-left-width: 3px; }
 
-/* Right/Bottom sides on ::after */
-.board.edges .tile.edge-right::after {
-  background-image: linear-gradient(to left, #ff7a00 3px, transparent 0);
-}
-.board.edges .tile.edge-bottom::after {
-  background-image: linear-gradient(to top, #ff7a00 3px, transparent 0);
-}
-/* If both right and bottom, draw both lines */
-.board.edges .tile.edge-right.edge-bottom::after {
-  background-image:
-    linear-gradient(to left, #ff7a00 3px, transparent 0),
-    linear-gradient(to top, #ff7a00 3px, transparent 0);
-}
+/* Round only on true outer-corner pieces */
+.board.edges .tile.edge-top.edge-left::before { border-top-left-radius: 3px; }
+.board.edges .tile.edge-top.edge-right::before { border-top-right-radius: 3px; }
+.board.edges .tile.edge-bottom.edge-left::before { border-bottom-left-radius: 3px; }
+.board.edges .tile.edge-bottom.edge-right::before { border-bottom-right-radius: 3px; }
 
 .tile[draggable="true"] { cursor: grab; }
 .tile.dragging { opacity: 0.9; cursor: grabbing; outline: 2px dashed rgba(110, 164, 255, 0.7); }
