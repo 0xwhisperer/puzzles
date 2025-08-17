@@ -220,6 +220,41 @@ button:disabled:active {
   border: 0.5px solid var(--stroke);
 }
 
+/* Square the outer perimeter corners for fixed board edges */
+.board .tile.pos-top {
+  border-top-left-radius: 0;
+  border-top-right-radius: 0;
+}
+.board .tile.pos-bottom {
+  border-bottom-left-radius: 0;
+  border-bottom-right-radius: 0;
+}
+.board .tile.pos-left {
+  border-top-left-radius: 0;
+  border-bottom-left-radius: 0;
+}
+.board .tile.pos-right {
+  border-top-right-radius: 0;
+  border-bottom-right-radius: 0;
+}
+/* Match inner frame to the tile shape */
+.board .tile.pos-top > .frame {
+  border-top-left-radius: 0;
+  border-top-right-radius: 0;
+}
+.board .tile.pos-bottom > .frame {
+  border-bottom-left-radius: 0;
+  border-bottom-right-radius: 0;
+}
+.board .tile.pos-left > .frame {
+  border-top-left-radius: 0;
+  border-bottom-left-radius: 0;
+}
+.board .tile.pos-right > .frame {
+  border-top-right-radius: 0;
+  border-bottom-right-radius: 0;
+}
+
 /* When two neighboring pieces correctly join, hide the shared border */
 .tile.join-top > .frame { border-top-color: transparent; }
 .tile.join-right > .frame { border-right-color: transparent; }

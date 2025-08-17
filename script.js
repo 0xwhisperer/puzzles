@@ -369,6 +369,14 @@
       setTilePiece(tile, initialPieces[pos]);
       addDnDHandlers(tile);
 
+      // Mark fixed board position sides for perimeter styling
+      const px = pos % N;
+      const py = Math.floor(pos / N);
+      if (py === 0) tile.classList.add('pos-top');
+      if (px === N - 1) tile.classList.add('pos-right');
+      if (py === N - 1) tile.classList.add('pos-bottom');
+      if (px === 0) tile.classList.add('pos-left');
+
       tile.appendChild(frame);
       board.appendChild(tile);
       tiles.push(tile);
