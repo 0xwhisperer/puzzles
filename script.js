@@ -437,6 +437,12 @@
   let dragAvatar = null;
   let avatarHalfW = 0;
   let avatarHalfH = 0;
+  // Avatar physics
+  let avatarTx = 0; // target x (translate)
+  let avatarTy = 0; // target y
+  let avatarX = 0;  // current x
+  let avatarY = 0;  // current y
+  let avatarRaf = 0;
   let pendingTile = null; // tile touched but not yet dragging
   const HOLD_MS = 300;
   const MOVE_THRESHOLD = 10; // px
@@ -467,6 +473,15 @@
     if (!dragSrc || dragSrc === this) return;
     pushUndo();
     swapTilePieces(dragSrc, this);
+    // Drop bounce for mouse DnD as well
+    try {
+      dragSrc.classList.add('drop-bounce');
+      this.classList.add('drop-bounce');
+      setTimeout(() => {
+        dragSrc && dragSrc.classList.remove('drop-bounce');
+        this.classList.remove('drop-bounce');
+      }, 240);
+    } catch (_) {}
     dragSrc.classList.remove('dragging');
     dragSrc = null;
 
@@ -583,15 +598,40 @@
     dragAvatar = avatar;
     avatarHalfW = rect.width / 2;
     avatarHalfH = rect.height / 2;
-    // Initial position under finger
-    moveAvatar(touch.clientX, touch.clientY);
+    // Initial position under finger (set both current and target)
+    avatarTx = touch.clientX - avatarHalfW;
+    avatarTy = touch.clientY - avatarHalfH;
+    avatarX = avatarTx;
+    avatarY = avatarTy;
+    dragAvatar.style.transform = `translate(${avatarX}px, ${avatarY}px)`;
+    // Pickup pop effect (box-shadow pulse without transform conflict)
+    try {
+      dragAvatar.classList.add('pickup-pop');
+      setTimeout(() => { if (dragAvatar) dragAvatar.classList.remove('pickup-pop'); }, 220);
+    } catch (_) {}
+    // Start physics loop
+    startAvatarLoop();
   }
 
   function moveAvatar(clientX, clientY) {
     if (!dragAvatar) return;
-    const x = clientX - avatarHalfW;
-    const y = clientY - avatarHalfH;
-    dragAvatar.style.transform = `translate(${x}px, ${y}px)`;
+    avatarTx = clientX - avatarHalfW;
+    avatarTy = clientY - avatarHalfH;
+  }
+
+  function startAvatarLoop() {
+    if (avatarRaf) cancelAnimationFrame(avatarRaf);
+    const stiffness = 0.18; // 0..1, higher = snappier
+    const step = () => {
+      // simple critically-damped like lerp toward target
+      avatarX += (avatarTx - avatarX) * stiffness;
+      avatarY += (avatarTy - avatarY) * stiffness;
+      if (dragAvatar) {
+        dragAvatar.style.transform = `translate(${avatarX}px, ${avatarY}px)`;
+      }
+      avatarRaf = requestAnimationFrame(step);
+    };
+    avatarRaf = requestAnimationFrame(step);
   }
 
   function endTouchDrag(commitDrop = true) {
@@ -601,6 +641,7 @@
     if (touchOver) touchOver.classList.remove('over');
     if (dragAvatar && dragAvatar.parentNode) dragAvatar.parentNode.removeChild(dragAvatar);
     dragAvatar = null;
+    if (avatarRaf) { cancelAnimationFrame(avatarRaf); avatarRaf = 0; }
     avatarHalfW = avatarHalfH = 0;
     if (src) src.classList.remove('dragging');
     dragSrc = null;
@@ -612,6 +653,15 @@
     pushUndo();
     swapTilePieces(src, dropTarget);
     updateJoins();
+    // Drop bounce on both tiles
+    try {
+      src.classList.add('drop-bounce');
+      dropTarget.classList.add('drop-bounce');
+      setTimeout(() => {
+        src.classList.remove('drop-bounce');
+        dropTarget.classList.remove('drop-bounce');
+      }, 240);
+    } catch (_) {}
     const solved = isSolved();
     board.classList.toggle('solved', solved);
     if (solved) {
