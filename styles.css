@@ -104,7 +104,7 @@ button:active { transform: translateY(1px); }
   content: "";
   position: absolute;
   inset: 0;
-  background-image: url("./977-1100x1700.jpg");
+  background-image: url("./kitty.png");
   background-size: 100% 100%;
   background-position: center;
   opacity: 0;
@@ -121,7 +121,7 @@ button:active { transform: translateY(1px); }
   position: relative; /* for potential per-side helpers later */
   user-select: none;
   -webkit-user-drag: element; /* allow dragging the tile in WebKit */
-  background-image: url("./977-1100x1700.jpg");
+  background-image: url("./kitty.png");
   background-repeat: no-repeat;
   /* N x N sprite sheet mapping; --x and --y are 0..N-1 */
   background-size: calc(var(--n) * 100%) calc(var(--n) * 100%);
