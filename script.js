@@ -482,7 +482,9 @@
       // Only puzzle 2 requires unlock in current design
       const nextLocked = (currentImage === 1 && !unlocked2);
       nextBtnTop.disabled = atEnd || nextLocked;
-      nextBtnTop.textContent = nextLocked ? 'Locked' : 'Next';
+      const label = nextLocked ? '🔒 Locked' : 'Next';
+      nextBtnTop.textContent = label;
+      nextBtnTop.setAttribute('aria-label', nextLocked ? 'Next (locked)' : 'Next');
     }
   }
   // Localhost-only Cheat button to instantly solve (and unlock next puzzle)
@@ -511,7 +513,7 @@
       if (currentImage === 1 && !unlocked2) {
         unlocked2 = true;
         msg = "Solved. You've unlocked a new puzzle! Click the Next button to see your next puzzle.";
-        dur = 3000;
+        dur = 5000;
       }
       updateStatus(msg, dur);
       pauseTimer();
