@@ -310,13 +310,26 @@ button:disabled:active {
 }
 
 /* Correct placement pulse */
+.tile.correct-pulse,
+.tile.correct-pulse-rm {
+  position: relative; /* ensure z-index takes effect */
+  z-index: 5;         /* above .board::after overlay (z-index:2) and sparkles (4) */
+}
 .tile.correct-pulse {
   animation: pulseCorrect 420ms ease-out;
+  will-change: transform, box-shadow, filter;
+  transform-origin: center center;
+  filter: drop-shadow(0 6px 16px rgba(0,0,0,0.35));
 }
 @keyframes pulseCorrect {
   0% { transform: scale(1); box-shadow: 0 0 0 0 rgba(123, 226, 123, 0); }
-  40% { transform: scale(1.06); box-shadow: 0 0 0 3px rgba(123, 226, 123, 0.6); }
+  40% { transform: scale(1.08); box-shadow: 0 0 0 3px rgba(123, 226, 123, 0.7); }
   100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(123, 226, 123, 0); }
+}
+
+/* Reduced-motion fallback: static green ring without animation */
+.tile.correct-pulse-rm {
+  box-shadow: 0 0 0 3px rgba(123, 226, 123, 0.7);
 }
 
 /* Sparkle particles for correct placement */
@@ -340,6 +353,8 @@ button:disabled:active {
 /* Accessibility: respect reduced motion */
 @media (prefers-reduced-motion: reduce) {
   .tile.correct-pulse { animation: none; }
+  /* Keep static fallback visible */
+  .tile.correct-pulse { box-shadow: 0 0 0 3px rgba(123, 226, 123, 0.7); }
   .board .sparkle { display: none !important; }
 }
 

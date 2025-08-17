@@ -52,6 +52,11 @@
 
   function pulseTile(tile) {
     if (!tile) return;
+    if (prefersReducedMotion()) {
+      tile.classList.add('correct-pulse-rm');
+      setTimeout(() => tile.classList.remove('correct-pulse-rm'), 420);
+      return;
+    }
     tile.classList.add('correct-pulse');
     // Remove the class after animation completes
     setTimeout(() => tile.classList.remove('correct-pulse'), 420);
