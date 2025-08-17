@@ -429,6 +429,7 @@
 
   // Drag & Drop
   let dragSrc = null;
+  let touchOver = null; // current tile under finger during touch drag
 
   function addDnDHandlers(tile) {
     tile.addEventListener('dragstart', onDragStart);
@@ -543,6 +544,78 @@
     tiles.forEach(t => t.classList.remove('over'));
     dragSrc = null;
   }
+
+  // Touch support (iOS/Android)
+  function onTouchStart(e) {
+    const t = e.target.closest('.tile');
+    if (!t) return;
+    // Prevent the page from scrolling while dragging a piece
+    e.preventDefault();
+    dragSrc = t;
+    t.classList.add('dragging');
+    if (touchOver) {
+      touchOver.classList.remove('over');
+      touchOver = null;
+    }
+  }
+
+  function onTouchMove(e) {
+    if (!dragSrc) return;
+    // Prevent scrolling while moving a piece
+    e.preventDefault();
+    const touch = e.touches && e.touches[0];
+    if (!touch) return;
+    const el = document.elementFromPoint(touch.clientX, touch.clientY);
+    const over = el ? el.closest('.tile') : null;
+    if (touchOver && touchOver !== over) touchOver.classList.remove('over');
+    if (over && over !== dragSrc) over.classList.add('over');
+    touchOver = over;
+  }
+
+  function onTouchEnd() {
+    if (!dragSrc) return;
+    const dropTarget = touchOver && touchOver !== dragSrc ? touchOver : null;
+    if (touchOver) touchOver.classList.remove('over');
+    const src = dragSrc;
+    src.classList.remove('dragging');
+    dragSrc = null;
+    touchOver = null;
+    if (!dropTarget) return; // no valid drop
+    // Mirror onDrop logic
+    pushUndo();
+    swapTilePieces(src, dropTarget);
+    updateJoins();
+    const solved = isSolved();
+    board.classList.toggle('solved', solved);
+    if (solved) {
+      let msg = 'Solved! 🎉';
+      let dur = undefined;
+      if (currentImage === 1 && !unlocked2) {
+        unlocked2 = true;
+        msg = "Solved. You've unlocked a new puzzle! Click the Next button to see your next puzzle.";
+        dur = 5000;
+      }
+      updateStatus(msg, dur);
+      pauseTimer();
+      updateNavButtons();
+    } else if (!timerRunning) {
+      startTimer();
+    }
+    saveState();
+  }
+
+  function onTouchCancel() {
+    if (touchOver) touchOver.classList.remove('over');
+    if (dragSrc) dragSrc.classList.remove('dragging');
+    touchOver = null;
+    dragSrc = null;
+  }
+
+  // Attach board-level touch listeners once
+  board.addEventListener('touchstart', onTouchStart, { passive: false });
+  board.addEventListener('touchmove', onTouchMove, { passive: false });
+  board.addEventListener('touchend', onTouchEnd);
+  board.addEventListener('touchcancel', onTouchCancel);
 
   // UI controls
   // Titlebar Back/Next buttons
