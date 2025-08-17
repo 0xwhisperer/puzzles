@@ -104,8 +104,7 @@ button:active { transform: translateY(1px); }
   content: "";
   position: absolute;
   inset: 0;
-  /* Use CSS var so JS can inject cropped data URL */
-  background-image: var(--img, url("./kitty.png"));
+  background-image: url("./sid.png");
   background-size: 100% 100%;
   background-position: center;
   opacity: 0;
@@ -122,8 +121,7 @@ button:active { transform: translateY(1px); }
   position: relative; /* for potential per-side helpers later */
   user-select: none;
   -webkit-user-drag: element; /* allow dragging the tile in WebKit */
-  /* Same CSS var so tiles and overlay stay perfectly aligned */
-  background-image: var(--img, url("./kitty.png"));
+  background-image: url("./sid.png");
   background-repeat: no-repeat;
   /* N x N sprite sheet mapping; --x and --y are 0..N-1 */
   background-size: calc(var(--n) * 100%) calc(var(--n) * 100%);

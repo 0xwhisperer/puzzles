@@ -322,36 +322,6 @@
     return shuffled;
   }
 
-  // Load an image and set a square-cropped (bottom-anchored) version as a CSS var
-  function setSquareBottomImage(src) {
-    return new Promise((resolve) => {
-      const img = new Image();
-      // Helpful on some hosts; safe to include
-      img.decoding = 'async';
-      img.crossOrigin = 'anonymous';
-      img.onload = () => {
-        try {
-          const s = Math.min(img.width, img.height);
-          const sx = Math.max(0, Math.floor((img.width - s) / 2)); // center horizontally
-          const sy = Math.max(0, img.height - s); // anchor to bottom
-          // Optional downscale to keep the data URL reasonable
-          const target = Math.min(1400, s); // cap to ~1400px for perf
-          const canvas = document.createElement('canvas');
-          canvas.width = target;
-          canvas.height = target;
-          const ctx = canvas.getContext('2d');
-          ctx.imageSmoothingQuality = 'high';
-          ctx.drawImage(img, sx, sy, s, s, 0, 0, target, target);
-          const url = canvas.toDataURL('image/png');
-          board.style.setProperty('--img', `url("${url}")`);
-        } catch (_) { /* ignore and fall back */ }
-        resolve();
-      };
-      img.onerror = () => resolve();
-      img.src = src;
-    });
-  }
-
   // Drag & Drop
   let dragSrc = null;
 
@@ -512,11 +482,9 @@
     }
   });
 
-  // Initialize: first set cropped image, then build board
-  setSquareBottomImage('./kitty.png').finally(() => {
-    createBoard();
-    // reflect initial toggle states if any were persisted by the browser
-    if (previewToggle && previewToggle.checked) board.classList.add('preview');
-    if (edgeToggle && edgeToggle.checked) board.classList.add('edges');
-  });
+  // Initialize
+  createBoard();
+  // reflect initial toggle states if any were persisted by the browser
+  if (previewToggle && previewToggle.checked) board.classList.add('preview');
+  if (edgeToggle && edgeToggle.checked) board.classList.add('edges');
 })();
