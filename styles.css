@@ -205,8 +205,6 @@ button:disabled:active {
   border-radius: 4px;
   background-color: transparent;
   /* Subtle edges rendered via child .frame so we can hide per-side joins */
-  transition: transform 140ms cubic-bezier(.2,.7,.3,1), box-shadow 160ms ease, outline-color 120ms ease;
-  will-change: transform;
 }
 .board.image-1 .tile { background-image: url("./sid1.png"); }
 .board.image-2 .tile { background-image: url("./sid2.png"); }
@@ -278,18 +276,8 @@ button:disabled:active {
 }
 
 .tile[draggable="true"] { cursor: grab; }
-.tile.dragging {
-  opacity: 0.9;
-  cursor: grabbing;
-  outline: 2px dashed rgba(110, 164, 255, 0.7);
-  transform: scale(1.03);
-  box-shadow: 0 12px 28px rgba(0,0,0,0.45), 0 0 0 1px rgba(255,255,255,0.12) inset;
-}
-.tile.over {
-  outline: 2px solid rgba(110, 164, 255, 0.85);
-  transform: scale(1.035);
-  box-shadow: 0 8px 20px rgba(0,0,0,0.35), 0 0 0 1px rgba(255,255,255,0.10) inset;
-}
+.tile.dragging { opacity: 0.9; cursor: grabbing; outline: 2px dashed rgba(110, 164, 255, 0.7); }
+.tile.over { outline: 2px solid rgba(110, 164, 255, 0.8); }
 
 /* Floating avatar that follows the finger during touch drag */
 .drag-avatar {
@@ -300,27 +288,6 @@ button:disabled:active {
   opacity: 0.95;
   box-shadow: 0 10px 24px rgba(0,0,0,0.45), 0 0 0 1px rgba(255,255,255,0.08) inset;
   will-change: transform;
-}
-
-/* Pickup pop for the floating avatar (avoid transform to not fight JS translate) */
-.drag-avatar.pickup-pop { animation: avatarPop 220ms ease-out; }
-@keyframes avatarPop {
-  0%   { box-shadow: 0 8px 18px rgba(0,0,0,0.36), 0 0 0 1px rgba(255,255,255,0.08) inset; }
-  50%  { box-shadow: 0 16px 34px rgba(0,0,0,0.55), 0 0 0 1px rgba(255,255,255,0.12) inset; }
-  100% { box-shadow: 0 10px 24px rgba(0,0,0,0.45), 0 0 0 1px rgba(255,255,255,0.08) inset; }
-}
-
-/* Drop bounce on tiles when swapping */
-.tile.drop-bounce { animation: dropBounce 220ms ease-out; }
-@keyframes dropBounce {
-  0% { transform: scale(1); }
-  40% { transform: scale(0.985); }
-  100% { transform: scale(1); }
-}
-
-/* Respect reduced motion preferences */
-@media (prefers-reduced-motion: reduce) {
-  .tile, .drag-avatar { transition: none !important; animation: none !important; }
 }
 
 /* Victory visuals: no grid overlay, glow on outer edge only */
