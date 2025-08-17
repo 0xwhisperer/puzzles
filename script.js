@@ -571,6 +571,16 @@
       saveState();
     });
   }
+  // Click the clock to pause; it resumes automatically on the next move
+  if (timerEl) {
+    timerEl.addEventListener('click', () => {
+      if (!timerRunning) return;
+      pauseTimer();
+      updateStatus('Paused');
+      setTimeout(() => updateStatus(''), 800);
+      saveState();
+    });
+  }
   // Back/Next button handlers
   if (backBtn) {
     backBtn.addEventListener('click', () => {
