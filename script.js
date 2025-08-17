@@ -437,6 +437,7 @@
   let dragAvatar = null;
   let avatarHalfW = 0;
   let avatarHalfH = 0;
+  let pendingTile = null; // tile touched but not yet dragging
   const HOLD_MS = 300;
   const MOVE_THRESHOLD = 10; // px
 
@@ -605,6 +606,7 @@
     dragSrc = null;
     holdActive = false;
     touchOver = null;
+    pendingTile = null;
     if (!dropTarget || !src) return;
     // Mirror onDrop logic
     pushUndo();
@@ -636,10 +638,12 @@
     if (!touch) return;
     touchStartX = touch.clientX;
     touchStartY = touch.clientY;
+    pendingTile = t;
     // Schedule long-press begin; do not immediately preventDefault to allow quick taps if needed
     clearTimeout(holdTimer);
     holdTimer = setTimeout(() => {
-      beginTouchDrag(t, touch);
+      // Only begin via long-press if we haven't started due to movement
+      if (!holdActive && pendingTile === t) beginTouchDrag(t, touch);
     }, HOLD_MS);
   }
 
@@ -647,13 +651,15 @@
     const touch = e.touches && e.touches[0];
     if (!touch) return;
     if (!holdActive) {
-      // Before drag has started: cancel if moved too far
+      // If moved beyond threshold, start drag immediately (swipe-to-drag)
       const dx = touch.clientX - touchStartX;
       const dy = touch.clientY - touchStartY;
-      if (Math.hypot(dx, dy) > MOVE_THRESHOLD) {
+      if (Math.hypot(dx, dy) > MOVE_THRESHOLD && pendingTile) {
         clearTimeout(holdTimer); holdTimer = null;
+        beginTouchDrag(pendingTile, touch);
+      } else {
+        return; // still within threshold; allow page to scroll
       }
-      return;
     }
     // Dragging: prevent page gestures and update avatar + hover
     e.preventDefault();
@@ -671,12 +677,14 @@
     } else {
       // Touch ended before hold => cancel pending drag
       clearTimeout(holdTimer); holdTimer = null;
+      pendingTile = null;
     }
   }
 
   function onTouchCancel() {
     if (holdActive) endTouchDrag(false);
     clearTimeout(holdTimer); holdTimer = null;
+    pendingTile = null;
   }
 
   // Attach board-level touch listeners once
