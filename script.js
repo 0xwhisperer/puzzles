@@ -34,6 +34,7 @@
   const TOTAL_PUZZLES = 2; // update if more puzzles are added
   let currentImage = 1; // 1-based index
   let unlocked2 = false;
+  let initialized = false; // tracks first-time initialization
 
   function formatTime(ms) {
     const totalSeconds = Math.floor(ms / 1000);
@@ -95,10 +96,15 @@
       const now = Date.now();
       const existing = loadState() || {};
       const boards = existing.boards && typeof existing.boards === 'object' ? existing.boards : {};
+      const elapsed = timerRunning ? (timerElapsedMs + (now - timerStartAt)) : timerElapsedMs;
       boards[String(currentImage)] = {
         pieces,
         preview: !!(previewToggle && previewToggle.checked),
         edges: !!(edgeToggle && edgeToggle.checked),
+        // per-puzzle timer persistence
+        tElapsedMs: elapsed,
+        tRunning: !!timerRunning,
+        tStartedAt: timerRunning ? timerStartAt : null,
         ts: now,
       };
       const state = {
@@ -106,8 +112,8 @@
         image: currentImage,
         unlocked2: !!unlocked2,
         boards,
-        // timer persistence (global)
-        elapsedMs: timerRunning ? (timerElapsedMs + (now - timerStartAt)) : timerElapsedMs,
+        // legacy/global timer fields (kept for backward compatibility)
+        elapsedMs: elapsed,
         running: !!timerRunning,
         startedAt: timerRunning ? timerStartAt : null,
         ts: now,
@@ -222,7 +228,10 @@
         try { localStorage.setItem(STORAGE_KEY, JSON.stringify(saved)); } catch (_) {}
       }
       // restore progression
-      currentImage = Math.max(1, Math.min(TOTAL_PUZZLES, Number(saved.image) || currentImage));
+      // Only set currentImage from saved on first load; keep navigation choice thereafter
+      if (!initialized && saved.image != null) {
+        currentImage = Math.max(1, Math.min(TOTAL_PUZZLES, Number(saved.image) || 1));
+      }
       unlocked2 = !!saved.unlocked2;
       const boardState = saved.boards && saved.boards[String(currentImage)];
       if (boardState && Array.isArray(boardState.pieces) && boardState.pieces.length === total) {
@@ -238,23 +247,54 @@
         if (edgeToggle) edgeToggle.checked = false;
         board.classList.remove('preview', 'edges');
       }
-      // Restore global timer
-      const savedElapsed = Math.max(0, Number(saved.elapsedMs) || 0);
-      const wasRunning = !!saved.running;
-      if (wasRunning) {
-        timerElapsedMs = savedElapsed;
-        timerStartAt = Date.now();
-        timerRunning = true;
-        clearInterval(timerInterval);
-        timerInterval = setInterval(renderTimer, 250);
+      // Restore per-puzzle timer if present; otherwise fallback to legacy/global
+      const boardKey = String(currentImage);
+      const nowTs = Date.now();
+      const boardTimer = saved.boards && saved.boards[boardKey] ? saved.boards[boardKey] : null;
+      if (boardTimer && ("tElapsedMs" in boardTimer || "tRunning" in boardTimer)) {
+        const tElapsed = Math.max(0, Number(boardTimer.tElapsedMs) || 0);
+        const tRunning = !!boardTimer.tRunning;
+        timerElapsedMs = tElapsed;
+        if (tRunning) {
+          // Resume from current time to avoid double-counting past elapsed
+          timerStartAt = nowTs;
+          timerRunning = true;
+          clearInterval(timerInterval);
+          timerInterval = setInterval(renderTimer, 250);
+        } else {
+          timerRunning = false;
+          timerStartAt = 0;
+          clearInterval(timerInterval);
+          timerInterval = null;
+        }
+        renderTimer();
+      } else if (boardTimer) {
+        // Fallback to legacy/global timer
+        const savedElapsed = Math.max(0, Number(saved.elapsedMs) || 0);
+        const wasRunning = !!saved.running;
+        if (wasRunning) {
+          timerElapsedMs = savedElapsed;
+          timerStartAt = nowTs;
+          timerRunning = true;
+          clearInterval(timerInterval);
+          timerInterval = setInterval(renderTimer, 250);
+        } else {
+          timerRunning = false;
+          timerStartAt = 0;
+          timerElapsedMs = savedElapsed;
+          clearInterval(timerInterval);
+          timerInterval = null;
+        }
+        renderTimer();
       } else {
-        timerRunning = false;
-        timerStartAt = 0;
-        timerElapsedMs = savedElapsed;
+        // No board exists yet for this puzzle: ensure timer is reset and stopped
         clearInterval(timerInterval);
         timerInterval = null;
+        timerRunning = false;
+        timerStartAt = 0;
+        timerElapsedMs = 0;
+        renderTimer();
       }
-      renderTimer();
     } else {
       initialPieces = shuffleUntilNotSolved(pieceIndices.slice());
       // New game -> reset but do not start timer; start on first move
@@ -296,6 +336,7 @@
     updateStatus();
     // Save initial state so refresh persists current layout
     saveState();
+    initialized = true;
   }
 
   function setTilePiece(tile, pieceIndex) {
