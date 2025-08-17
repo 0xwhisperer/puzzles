@@ -22,7 +22,8 @@ body {
 }
 
 .app {
-  width: min(96vw, 980px);
+  display: inline-block; /* shrink to content width */
+  max-width: 96vw;       /* guard against overflow on small screens */
   padding: 20px;
   background: var(--glass);
   border: 1px solid rgba(255,255,255,0.08);
@@ -44,6 +45,7 @@ h1 {
 .controls {
   display: flex;
   align-items: center;
+  justify-content: center; /* center controls within the card */
   gap: 12px;
   margin-bottom: 12px;
   flex-wrap: wrap;
@@ -83,6 +85,7 @@ button:active { transform: translateY(1px); }
 .board {
   --n: 10; /* updated by JS if needed */
   position: relative;
+  margin: 0 auto; /* center board inside the card */
   width: min(90vmin, 720px);
   aspect-ratio: 1 / 1; /* square board, image is scaled to fit */
   display: grid;
