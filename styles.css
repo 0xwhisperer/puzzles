@@ -168,8 +168,8 @@ button:disabled:active {
   overflow: hidden;
   box-shadow: 0 10px 30px rgba(0,0,0,0.45), 0 0 0 1px rgba(255,255,255,0.06) inset,
     0 0 0 1px rgba(110,164,255,0.12);
-  /* Improve touch dragging UX */
-  touch-action: none;           /* prevent browser panning/zooming while dragging */
+  /* Improve touch dragging UX: allow panning until drag actually begins */
+  touch-action: manipulation;   /* allow pan, disable dbl-tap zoom */
   user-select: none;            /* standard property */
   -webkit-user-select: none;    /* avoid text/image selection on iOS */
 }
@@ -278,6 +278,17 @@ button:disabled:active {
 .tile[draggable="true"] { cursor: grab; }
 .tile.dragging { opacity: 0.9; cursor: grabbing; outline: 2px dashed rgba(110, 164, 255, 0.7); }
 .tile.over { outline: 2px solid rgba(110, 164, 255, 0.8); }
+
+/* Floating drag avatar that follows the finger during touch drag */
+.drag-avatar {
+  position: fixed;
+  left: 0; top: 0;
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+  z-index: 10000;
+  opacity: 0.95;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.35);
+}
 
 /* Victory visuals: no grid overlay, glow on outer edge only */
 .board.solved .tile { box-shadow: none; }
