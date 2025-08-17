@@ -440,6 +440,34 @@
   }
 
   // UI controls
+  // Localhost-only Cheat button to instantly solve (and unlock next puzzle)
+  (function addCheatIfLocal() {
+    const host = window.location.hostname;
+    const isLocal = host === 'localhost' || host === '127.0.0.1' || host === '::1';
+    if (!isLocal) return;
+    const controls = document.querySelector('.controls');
+    if (!controls) return;
+    const cheatBtn = document.createElement('button');
+    cheatBtn.type = 'button';
+    cheatBtn.id = 'cheatBtn';
+    cheatBtn.textContent = 'Cheat';
+    controls.insertBefore(cheatBtn, (resetBtn && resetBtn.nextSibling) || null);
+    cheatBtn.addEventListener('click', () => {
+      // Complete the puzzle by assigning correct piece to each tile position
+      pushUndo();
+      tiles.forEach((tile, pos) => setTilePiece(tile, pos));
+      updateJoins();
+      board.classList.add('solved');
+      let msg = 'Solved! 🎉';
+      if (currentImage === 1 && !unlocked2) {
+        unlocked2 = true;
+        msg = 'Solved! 🎉 Unlocked Puzzle 2';
+      }
+      updateStatus(msg);
+      pauseTimer();
+      saveState();
+    });
+  })();
   previewToggle.addEventListener('change', () => {
     // change fires after checkbox state flips; capture previous state for undo
     const prevSnap = getSnapshot();
