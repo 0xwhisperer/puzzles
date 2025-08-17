@@ -512,9 +512,31 @@
   function onDragStart(e) {
     dragSrc = this;
     this.classList.add('dragging');
+    this.classList.add('drag-origin');
     // Firefox requires data to be set
     e.dataTransfer.setData('text/plain', this.dataset.piece || '');
     e.dataTransfer.effectAllowed = 'move';
+    // Create a custom drag image (ghost) with solid inner ring
+    const rect = this.getBoundingClientRect();
+    const avatar = document.createElement('div');
+    avatar.className = 'drag-avatar';
+    avatar.style.setProperty('--n', String(N));
+    avatar.style.setProperty('--x', this.style.getPropertyValue('--x'));
+    avatar.style.setProperty('--y', this.style.getPropertyValue('--y'));
+    avatar.style.backgroundImage = (
+      currentImage === 3 ? 'url("./catman.png")' :
+      currentImage === 2 ? 'url("./sid2.png")' :
+      'url("./sid1.png")'
+    );
+    avatar.style.width = rect.width + 'px';
+    avatar.style.height = rect.height + 'px';
+    avatar.style.position = 'fixed';
+    avatar.style.left = '-10000px';
+    avatar.style.top = '-10000px';
+    avatar.style.pointerEvents = 'none';
+    document.body.appendChild(avatar);
+    dragAvatar = avatar;
+    try { e.dataTransfer.setDragImage(avatar, rect.width / 2, rect.height / 2); } catch (_) {}
   }
   function onDragEnter() { this.classList.add('over'); }
   function onDragOver(e) { e.preventDefault(); e.dataTransfer.dropEffect = 'move'; }
@@ -542,6 +564,9 @@
       }
     }
     a.classList.remove('dragging');
+    a.classList.remove('drag-origin');
+    if (dragAvatar && dragAvatar.parentNode) dragAvatar.parentNode.removeChild(dragAvatar);
+    dragAvatar = null;
     dragSrc = null;
 
     updateJoins();
@@ -629,7 +654,10 @@
 
   function onDragEnd() {
     this.classList.remove('dragging');
+    this.classList.remove('drag-origin');
     tiles.forEach(t => t.classList.remove('over'));
+    if (dragAvatar && dragAvatar.parentNode) dragAvatar.parentNode.removeChild(dragAvatar);
+    dragAvatar = null;
     dragSrc = null;
   }
 
@@ -638,6 +666,7 @@
     dragSrc = tile;
     holdActive = true;
     tile.classList.add('dragging');
+    tile.classList.add('drag-origin');
     if (navigator.vibrate) {
       try { navigator.vibrate(10); } catch (_) {}
     }
@@ -684,7 +713,7 @@
     if (dragAvatar && dragAvatar.parentNode) dragAvatar.parentNode.removeChild(dragAvatar);
     dragAvatar = null;
     avatarHalfW = avatarHalfH = 0;
-    if (src) src.classList.remove('dragging');
+    if (src) { src.classList.remove('dragging'); src.classList.remove('drag-origin'); }
     dragSrc = null;
     holdActive = false;
     touchOver = null;

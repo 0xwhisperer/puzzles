@@ -313,11 +313,17 @@ button:disabled:active {
 }
 
 .tile[draggable="true"] { cursor: grab; }
-.tile.dragging {
-  opacity: 0.9;
-  cursor: grabbing;
-  /* Inset ring so all four sides are visible and not occluded by neighbors */
-  box-shadow: 0 0 0 2px rgba(110, 164, 255, 0.7) inset;
+.tile.dragging { opacity: 0.9; cursor: grabbing; }
+/* Dashed placeholder ring at the origin cell while dragging */
+.tile.drag-origin { position: relative; }
+.tile.drag-origin::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border: 2px dashed rgba(110, 164, 255, 0.8);
+  border-radius: inherit;
+  pointer-events: none;
+  box-sizing: border-box;
 }
 .tile.over {
   /* Solid, slightly brighter inset ring for the drop target */
@@ -331,7 +337,11 @@ button:disabled:active {
   background-position: calc(var(--x) * 100% / (var(--n) - 1)) calc(var(--y) * 100% / (var(--n) - 1));
   border-radius: 4px;
   opacity: 0.95;
-  box-shadow: 0 10px 24px rgba(0,0,0,0.45), 0 0 0 1px rgba(255,255,255,0.08) inset;
+  /* Solid inner ring to represent the moving piece */
+  box-shadow:
+    0 10px 24px rgba(0,0,0,0.45),
+    0 0 0 1px rgba(255,255,255,0.08) inset,
+    0 0 0 2px rgba(110, 164, 255, 0.9) inset;
   will-change: transform;
 }
 
