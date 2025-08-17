@@ -92,19 +92,25 @@
   function saveState() {
     try {
       const pieces = tiles.map(t => Number(t.dataset.piece));
-      const state = {
-        n: N,
+      const now = Date.now();
+      const existing = loadState() || {};
+      const boards = existing.boards && typeof existing.boards === 'object' ? existing.boards : {};
+      boards[String(currentImage)] = {
         pieces,
         preview: !!(previewToggle && previewToggle.checked),
         edges: !!(edgeToggle && edgeToggle.checked),
-        // timer persistence
-        elapsedMs: timerRunning ? (timerElapsedMs + (Date.now() - timerStartAt)) : timerElapsedMs,
-        running: !!timerRunning,
-        startedAt: timerRunning ? timerStartAt : null,
-        // progression
+        ts: now,
+      };
+      const state = {
+        n: N,
         image: currentImage,
         unlocked2: !!unlocked2,
-        ts: Date.now(),
+        boards,
+        // timer persistence (global)
+        elapsedMs: timerRunning ? (timerElapsedMs + (now - timerStartAt)) : timerElapsedMs,
+        running: !!timerRunning,
+        startedAt: timerRunning ? timerStartAt : null,
+        ts: now,
       };
       localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
     } catch (_) { /* ignore */ }
@@ -197,21 +203,45 @@
     const pieceIndices = [...Array(total).keys()];
     let initialPieces;
     const saved = loadState();
-    if (saved && saved.n === N && Array.isArray(saved.pieces) && saved.pieces.length === total) {
+    if (saved && saved.n === N) {
+      // Migrate v1 -> v2 (single board -> boards map)
+      if (!saved.boards) {
+        const img = Math.max(1, Math.min(TOTAL_PUZZLES, Number(saved.image) || 1));
+        saved.boards = {};
+        if (Array.isArray(saved.pieces) && saved.pieces.length === total) {
+          saved.boards[String(img)] = {
+            pieces: saved.pieces.slice(),
+            preview: !!saved.preview,
+            edges: !!saved.edges,
+            ts: saved.ts || Date.now(),
+          };
+        }
+        delete saved.pieces;
+        delete saved.preview;
+        delete saved.edges;
+        try { localStorage.setItem(STORAGE_KEY, JSON.stringify(saved)); } catch (_) {}
+      }
       // restore progression
-      currentImage = Math.max(1, Math.min(2, Number(saved.image) || 1));
+      currentImage = Math.max(1, Math.min(TOTAL_PUZZLES, Number(saved.image) || currentImage));
       unlocked2 = !!saved.unlocked2;
-      initialPieces = saved.pieces.slice();
-      // Restore helper toggles
-      if (previewToggle) previewToggle.checked = !!saved.preview;
-      if (edgeToggle) edgeToggle.checked = !!saved.edges;
-      board.classList.toggle('preview', !!saved.preview);
-      board.classList.toggle('edges', !!saved.edges);
-      // Restore timer: if running, continue; else show saved elapsed
+      const boardState = saved.boards && saved.boards[String(currentImage)];
+      if (boardState && Array.isArray(boardState.pieces) && boardState.pieces.length === total) {
+        initialPieces = boardState.pieces.slice();
+        if (previewToggle) previewToggle.checked = !!boardState.preview;
+        if (edgeToggle) edgeToggle.checked = !!boardState.edges;
+        board.classList.toggle('preview', !!boardState.preview);
+        board.classList.toggle('edges', !!boardState.edges);
+      } else {
+        initialPieces = shuffleUntilNotSolved(pieceIndices.slice());
+        // default toggles off for new puzzle state
+        if (previewToggle) previewToggle.checked = false;
+        if (edgeToggle) edgeToggle.checked = false;
+        board.classList.remove('preview', 'edges');
+      }
+      // Restore global timer
       const savedElapsed = Math.max(0, Number(saved.elapsedMs) || 0);
       const wasRunning = !!saved.running;
       if (wasRunning) {
-        // Continue from saved elapsed without double-counting
         timerElapsedMs = savedElapsed;
         timerStartAt = Date.now();
         timerRunning = true;
@@ -227,8 +257,8 @@
       renderTimer();
     } else {
       initialPieces = shuffleUntilNotSolved(pieceIndices.slice());
-      // New game -> reset and start timer
-      resetTimer(true);
+      // New game -> reset but do not start timer; start on first move
+      resetTimer(false);
     }
 
     // Apply image class to board
@@ -482,11 +512,14 @@
       // Only puzzle 2 requires unlock in current design
       const nextLocked = (currentImage === 1 && !unlocked2);
       nextBtnTop.disabled = atEnd || nextLocked;
-      const label = nextLocked ? '🔒 Locked' : 'Next';
+      const small = window.innerWidth <= 380;
+      const label = nextLocked ? (small ? '🔒' : '🔒 Locked') : 'Next';
       nextBtnTop.textContent = label;
       nextBtnTop.setAttribute('aria-label', nextLocked ? 'Next (locked)' : 'Next');
     }
   }
+  // Keep button labels responsive to viewport changes
+  window.addEventListener('resize', updateNavButtons);
   // Localhost-only Cheat button to instantly solve (and unlock next puzzle)
   (function addCheatIfLocal() {
     const host = window.location.hostname;
@@ -543,10 +576,8 @@
     backBtn.addEventListener('click', () => {
       if (currentImage <= 1) return;
       pushUndo();
-      try { localStorage.removeItem(STORAGE_KEY); } catch (_) {}
-      if (previewToggle) previewToggle.checked = false;
-      if (edgeToggle) edgeToggle.checked = false;
-      board.classList.remove('preview', 'edges', 'solved');
+      // Persist current puzzle before switching
+      saveState();
       currentImage = Math.max(1, currentImage - 1);
       createBoard();
       updateStatus(`Back: Puzzle ${currentImage}`);
@@ -559,10 +590,8 @@
       // For current design, only moving 1->2 may be locked
       if (currentImage === 1 && !unlocked2) return;
       pushUndo();
-      try { localStorage.removeItem(STORAGE_KEY); } catch (_) {}
-      if (previewToggle) previewToggle.checked = false;
-      if (edgeToggle) edgeToggle.checked = false;
-      board.classList.remove('preview', 'edges', 'solved');
+      // Persist current puzzle before switching
+      saveState();
       currentImage = Math.min(TOTAL_PUZZLES, currentImage + 1);
       createBoard();
       updateStatus(`Next: Puzzle ${currentImage}`);
@@ -573,21 +602,48 @@
     resetBtn.addEventListener('click', (e) => {
       const relock = !!e.altKey; // Option/Alt-click to relock next puzzle for testing
       pushUndo();
-      try { localStorage.removeItem(STORAGE_KEY); } catch (_) {}
+      const saved = loadState() || {};
+      // Normal reset: only reset current puzzle state
+      if (!relock) {
+        // Clear toggles and assign a fresh shuffle
+        if (previewToggle) previewToggle.checked = false;
+        if (edgeToggle) edgeToggle.checked = false;
+        board.classList.remove('preview', 'edges', 'solved');
+        const fresh = shuffleUntilNotSolved([...Array(total).keys()]);
+        tiles.forEach((tile, pos) => setTilePiece(tile, fresh[pos]));
+        updateJoins();
+        // Reset but do not start timer; start on first move
+        resetTimer(false);
+        saveState();
+        updateStatus('Reset');
+        setTimeout(() => updateStatus(''), 800);
+        return;
+      }
+      // Relock path: clear saved boards for puzzles 1 and 2, lock progression, and zero timer
+      unlocked2 = false;
+      const boards = saved.boards && typeof saved.boards === 'object' ? saved.boards : {};
+      delete boards['1'];
+      delete boards['2'];
+      try {
+        const now = Date.now();
+        const newState = {
+          n: N,
+          image: 1,
+          unlocked2: false,
+          boards,
+          elapsedMs: 0,
+          running: false,
+          startedAt: null,
+          ts: now,
+        };
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(newState));
+      } catch (_) {}
+      currentImage = 1;
       if (previewToggle) previewToggle.checked = false;
       if (edgeToggle) edgeToggle.checked = false;
       board.classList.remove('preview', 'edges', 'solved');
-      if (relock) {
-        unlocked2 = false;
-        currentImage = 1;
-      }
       createBoard();
-      if (relock) {
-        updateStatus('Relocked next puzzle for testing', 1500);
-      } else {
-        updateStatus('Reset');
-        setTimeout(() => updateStatus(''), 800);
-      }
+      updateStatus('Relocked next puzzle for testing', 1500);
     });
   }
 
