@@ -23,6 +23,11 @@
   let timerStartAt = 0; // epoch ms when last started
   let timerElapsedMs = 0; // accumulated elapsed ms excluding current run segment
 
+  // ---- Puzzle progression ----
+  // 1 = sid.png, 2 = sid2.png
+  let currentImage = 1;
+  let unlocked2 = false;
+
   function formatTime(ms) {
     const totalSeconds = Math.floor(ms / 1000);
     const m = Math.floor(totalSeconds / 60);
@@ -89,6 +94,9 @@
         elapsedMs: timerRunning ? (timerElapsedMs + (Date.now() - timerStartAt)) : timerElapsedMs,
         running: !!timerRunning,
         startedAt: timerRunning ? timerStartAt : null,
+        // progression
+        image: currentImage,
+        unlocked2: !!unlocked2,
         ts: Date.now(),
       };
       localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
@@ -183,6 +191,9 @@
     let initialPieces;
     const saved = loadState();
     if (saved && saved.n === N && Array.isArray(saved.pieces) && saved.pieces.length === total) {
+      // restore progression
+      currentImage = Math.max(1, Math.min(2, Number(saved.image) || 1));
+      unlocked2 = !!saved.unlocked2;
       initialPieces = saved.pieces.slice();
       // Restore helper toggles
       if (previewToggle) previewToggle.checked = !!saved.preview;
@@ -213,6 +224,10 @@
       resetTimer(true);
     }
 
+    // Apply image class to board
+    board.classList.remove('image-1', 'image-2');
+    board.classList.add(currentImage === 2 ? 'image-2' : 'image-1');
+
     for (let pos = 0; pos < total; pos++) {
       const tile = document.createElement('div');
       tile.className = 'tile';
@@ -235,7 +250,8 @@
     }
 
     updateJoins();
-    board.classList.toggle('solved', isSolved());
+    const solved = isSolved();
+    board.classList.toggle('solved', solved);
     updateStatus();
     // Save initial state so refresh persists current layout
     saveState();
@@ -345,7 +361,12 @@
     const solved = isSolved();
     board.classList.toggle('solved', solved);
     if (solved) {
-      updateStatus('Solved! 🎉');
+      let msg = 'Solved! 🎉';
+      if (currentImage === 1 && !unlocked2) {
+        unlocked2 = true;
+        msg = 'Solved! 🎉 Unlocked Puzzle 2';
+      }
+      updateStatus(msg);
       pauseTimer();
     } else if (!timerRunning) {
       // If not already running (e.g., loaded mid-game but paused), start on first move
@@ -443,6 +464,10 @@
       if (previewToggle) previewToggle.checked = false;
       if (edgeToggle) edgeToggle.checked = false;
       board.classList.remove('preview', 'edges', 'solved');
+      // If second puzzle has been unlocked and we're on the first, switch to #2
+      if (unlocked2 && currentImage === 1) {
+        currentImage = 2;
+      }
       createBoard();
       updateStatus('Reset');
       setTimeout(() => updateStatus(''), 800);

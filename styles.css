@@ -104,7 +104,7 @@ button:active { transform: translateY(1px); }
   content: "";
   position: absolute;
   inset: 0;
-  background-image: url("./sid.png");
+  /* background-image is set by .board.image-1::after / .board.image-2::after */
   background-size: 100% 100%;
   background-position: center;
   opacity: 0;
@@ -112,6 +112,8 @@ button:active { transform: translateY(1px); }
   pointer-events: none;
   z-index: 2; /* ensure overlay sits above tiles */
 }
+.board.image-1::after { background-image: url("./sid.png"); }
+.board.image-2::after { background-image: url("./sid2.png"); }
 .board.preview::after { opacity: 1; }
 
 /* Tiles */
@@ -121,7 +123,6 @@ button:active { transform: translateY(1px); }
   position: relative; /* for potential per-side helpers later */
   user-select: none;
   -webkit-user-drag: element; /* allow dragging the tile in WebKit */
-  background-image: url("./sid.png");
   background-repeat: no-repeat;
   /* N x N sprite sheet mapping; --x and --y are 0..N-1 */
   background-size: calc(var(--n) * 100%) calc(var(--n) * 100%);
@@ -130,6 +131,8 @@ button:active { transform: translateY(1px); }
   background-color: transparent;
   /* Subtle edges rendered via child .frame so we can hide per-side joins */
 }
+.board.image-1 .tile { background-image: url("./sid.png"); }
+.board.image-2 .tile { background-image: url("./sid2.png"); }
 
 /* Per-side subtle edges */
 .tile > .frame {
