@@ -1,0 +1,204 @@
+/* Base layout */
+:root {
+  color-scheme: light dark;
+  --bg1: #0b1020;
+  --bg2: #0f1630;
+  --accent: #6ea4ff;
+  --accent-2: #9f7fff;
+  --glass: rgba(255, 255, 255, 0.06);
+  --stroke: rgba(180, 190, 210, 0.50); /* semi-transparent grey for tile edges */
+}
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  font: 16px/1.4 system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji", "Segoe UI Emoji";
+  display: grid;
+  place-items: center;
+  min-height: 100svh;
+  background:
+    radial-gradient(1200px 600px at 20% -10%, rgba(110, 164, 255, 0.18), transparent 60%),
+    radial-gradient(1200px 600px at 110% 110%, rgba(159, 127, 255, 0.18), transparent 60%),
+    linear-gradient(180deg, var(--bg1), var(--bg2));
+}
+
+.app {
+  width: min(96vw, 980px);
+  padding: 20px;
+  background: var(--glass);
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 16px;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.35), inset 0 0 0 1px rgba(255,255,255,0.04);
+  backdrop-filter: blur(8px);
+}
+
+h1 {
+  margin: 0 0 12px;
+  font-weight: 700;
+  letter-spacing: 0.2px;
+  background: linear-gradient(90deg, #fff, #cfd8ff 40%, #a3b7ff);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+.controls {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 12px;
+  flex-wrap: wrap;
+}
+
+/* Timer */
+.clock {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  color: #e8eeff;
+  padding: 6px 10px;
+  border-radius: 10px;
+  background: linear-gradient(180deg, rgba(255,255,255,0.10), rgba(255,255,255,0.03));
+  border: 1px solid rgba(255,255,255,0.14);
+  box-shadow: 0 2px 10px rgba(0,0,0,0.25), inset 0 0 0 1px rgba(255,255,255,0.05);
+}
+
+button {
+  appearance: none;
+  border: 1px solid rgba(255,255,255,0.14);
+  background: linear-gradient(180deg, rgba(255,255,255,0.12), rgba(255,255,255,0.04));
+  color: #eef2ff;
+  padding: 8px 12px;
+  border-radius: 10px;
+  cursor: pointer;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.25), inset 0 0 0 1px rgba(255,255,255,0.05);
+  transition: transform 120ms ease, filter 120ms ease, box-shadow 120ms ease;
+}
+button:hover { filter: brightness(1.08); box-shadow: 0 4px 14px rgba(0,0,0,0.35), inset 0 0 0 1px rgba(255,255,255,0.08); }
+button:active { transform: translateY(1px); }
+
+.preview-toggle { display: inline-flex; align-items: center; gap: 6px; }
+.status { min-height: 1.4em; color: #7be27b; font-weight: 600; }
+
+/* Board */
+.board {
+  --n: 10; /* updated by JS if needed */
+  position: relative;
+  width: min(90vmin, 720px);
+  aspect-ratio: 1 / 1; /* square board, image is scaled to fit */
+  display: grid;
+  grid-template-columns: repeat(var(--n), 1fr);
+  gap: 0; /* rely on tile inner strokes instead of grout */
+  background: linear-gradient(180deg, rgba(255,255,255,0.06), rgba(255,255,255,0.00));
+  border-radius: 16px;
+  overflow: hidden;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.45), 0 0 0 1px rgba(255,255,255,0.06) inset,
+    0 0 0 1px rgba(110,164,255,0.12);
+}
+
+/* Subtle original-image guide overlay, toggled by .preview */
+.board::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background-image: url("./977-1100x1700.jpg");
+  background-size: 100% 100%;
+  background-position: center;
+  opacity: 0;
+  transition: opacity 160ms ease;
+  pointer-events: none;
+  z-index: 2; /* ensure overlay sits above tiles */
+}
+.board.preview::after { opacity: 1; }
+
+/* Tiles */
+.tile {
+  width: 100%;
+  aspect-ratio: 1 / 1; /* square pieces */
+  position: relative; /* for potential per-side helpers later */
+  user-select: none;
+  -webkit-user-drag: element; /* allow dragging the tile in WebKit */
+  background-image: url("./977-1100x1700.jpg");
+  background-repeat: no-repeat;
+  /* N x N sprite sheet mapping; --x and --y are 0..N-1 */
+  background-size: calc(var(--n) * 100%) calc(var(--n) * 100%);
+  background-position: calc(var(--x) * 100% / (var(--n) - 1)) calc(var(--y) * 100% / (var(--n) - 1));
+  border-radius: 4px;
+  background-color: transparent;
+  /* Subtle edges rendered via child .frame so we can hide per-side joins */
+}
+
+/* Per-side subtle edges */
+.tile > .frame {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  border-radius: 4px;
+  border: 0.5px solid var(--stroke);
+}
+
+/* When two neighboring pieces correctly join, hide the shared border */
+.tile.join-top > .frame { border-top-color: transparent; }
+.tile.join-right > .frame { border-right-color: transparent; }
+.tile.join-bottom > .frame { border-bottom-color: transparent; }
+.tile.join-left > .frame { border-left-color: transparent; }
+
+/* When a full 2x2 block is correct, flatten the inner corner radii */
+.tile.sharp-tl { border-top-left-radius: 0; }
+.tile.sharp-tr { border-top-right-radius: 0; }
+.tile.sharp-br { border-bottom-right-radius: 0; }
+.tile.sharp-bl { border-bottom-left-radius: 0; }
+.tile.sharp-tl > .frame { border-top-left-radius: 0; }
+.tile.sharp-tr > .frame { border-top-right-radius: 0; }
+.tile.sharp-br > .frame { border-bottom-right-radius: 0; }
+.tile.sharp-bl > .frame { border-bottom-left-radius: 0; }
+
+/* Edge helper: draw a bright line only on the outer side(s) of edge pieces */
+.board.edges .tile::before,
+.board.edges .tile::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 3; /* above the full-image guide (z-index:2) */
+  background: none; /* per-side rules below will set background gradients */
+}
+
+/* Top/Left sides on ::before */
+.board.edges .tile.edge-top::before {
+  background-image: linear-gradient(to bottom, #ff7a00 3px, transparent 0);
+}
+.board.edges .tile.edge-left::before {
+  background-image: linear-gradient(to right, #ff7a00 3px, transparent 0);
+}
+/* If both top and left, draw both lines */
+.board.edges .tile.edge-top.edge-left::before {
+  background-image:
+    linear-gradient(to bottom, #ff7a00 3px, transparent 0),
+    linear-gradient(to right, #ff7a00 3px, transparent 0);
+}
+
+/* Right/Bottom sides on ::after */
+.board.edges .tile.edge-right::after {
+  background-image: linear-gradient(to left, #ff7a00 3px, transparent 0);
+}
+.board.edges .tile.edge-bottom::after {
+  background-image: linear-gradient(to top, #ff7a00 3px, transparent 0);
+}
+/* If both right and bottom, draw both lines */
+.board.edges .tile.edge-right.edge-bottom::after {
+  background-image:
+    linear-gradient(to left, #ff7a00 3px, transparent 0),
+    linear-gradient(to top, #ff7a00 3px, transparent 0);
+}
+
+.tile[draggable="true"] { cursor: grab; }
+.tile.dragging { opacity: 0.9; cursor: grabbing; outline: 2px dashed rgba(110, 164, 255, 0.7); }
+.tile.over { outline: 2px solid rgba(110, 164, 255, 0.8); }
+
+/* Victory pulse */
+.board.solved .tile { box-shadow: inset 0 0 0 2px rgba(123, 226, 123, 0.28); }
+.board.solved { animation: solvedPulse 800ms ease-in-out 2; }
+@keyframes solvedPulse {
+  0% { box-shadow: 0 0 0 0 rgba(43,122,11,0.4); }
+  100% { box-shadow: 0 0 0 16px rgba(43,122,11,0); }
+}

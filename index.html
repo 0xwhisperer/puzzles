@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Image Puzzle – 10x10</title>
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <div class="app">
+      <h1>Karis' Puzzle (100 pcs.)</h1>
+      <div class="controls">
+        <div id="timer" class="clock" aria-label="Elapsed time">00:00</div>
+        <button id="shuffleBtn" type="button">Shuffle</button>
+        <button id="resetBtn" type="button">Reset</button>
+        <label class="preview-toggle">
+          <input type="checkbox" id="previewToggle" />
+          <span>Show guide</span>
+        </label>
+        <label class="edge-toggle">
+          <input type="checkbox" id="edgeToggle" />
+          <span>Highlight edge pieces</span>
+        </label>
+        <span id="status" class="status" aria-live="polite"></span>
+      </div>
+
+      <div id="board" class="board" role="grid" aria-label="Puzzle board" aria-live="polite"></div>
+    </div>
+
+    <script src="./script.js"></script>
+  </body>
+</html>
