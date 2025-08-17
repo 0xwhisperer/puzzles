@@ -8,22 +8,33 @@
   </head>
   <body>
     <div class="app">
-      <h1>First Puzzle (100 pcs.)</h1>
+      <div class="titlebar">
+        <button id="backBtn" type="button">Back</button>
+        <h1 id="title">Sid Puzzle 1 (100 pcs.)</h1>
+        <button id="nextBtn" type="button">Next</button>
+      </div>
       <div class="controls">
         <div id="timer" class="clock" aria-label="Elapsed time">00:00</div>
-        <button id="resetBtn" type="button">New Game</button>
-        <label class="preview-toggle">
-          <input type="checkbox" id="previewToggle" />
-          <span>Show guide</span>
-        </label>
-        <label class="edge-toggle">
-          <input type="checkbox" id="edgeToggle" />
-          <span>Highlight edge pieces</span>
-        </label>
+        <div class="toggles">
+          <label class="preview-toggle">
+            <input type="checkbox" id="previewToggle" />
+            <span>Show guide</span>
+          </label>
+          <label class="edge-toggle">
+            <input type="checkbox" id="edgeToggle" />
+            <span>Highlight edge pieces</span>
+          </label>
+        </div>
+        <button id="resetBtn" type="button">Reset</button>
         <span id="status" class="status" aria-live="polite"></span>
       </div>
 
       <div id="board" class="board" role="grid" aria-label="Puzzle board" aria-live="polite"></div>
+    </div>
+
+    <!-- Modal for transient messages (does not resize layout) -->
+    <div id="modal" class="modal" role="dialog" aria-modal="true">
+      <div class="modal-content" id="modalContent"></div>
     </div>
 
     <script src="./script.js"></script>

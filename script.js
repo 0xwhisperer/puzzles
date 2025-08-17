@@ -6,6 +6,12 @@
   const edgeToggle = document.getElementById('edgeToggle');
   const statusEl = document.getElementById('status');
   const timerEl = document.getElementById('timer');
+  const titleEl = document.getElementById('title');
+  const backBtn = document.getElementById('backBtn');
+  const nextBtnTop = document.getElementById('nextBtn');
+  const modal = document.getElementById('modal');
+  const modalContent = document.getElementById('modalContent');
+  let modalTimer = null;
 
   board.style.setProperty('--n', String(N));
 
@@ -25,7 +31,8 @@
 
   // ---- Puzzle progression ----
   // 1 = sid.png, 2 = sid2.png
-  let currentImage = 1;
+  const TOTAL_PUZZLES = 2; // update if more puzzles are added
+  let currentImage = 1; // 1-based index
   let unlocked2 = false;
 
   function formatTime(ms) {
@@ -227,6 +234,10 @@
     // Apply image class to board
     board.classList.remove('image-1', 'image-2');
     board.classList.add(currentImage === 2 ? 'image-2' : 'image-1');
+    // Ensure titlebar nav buttons reflect current progression
+    updateNavButtons();
+    // Reflect active puzzle in the heading
+    updateTitle();
 
     for (let pos = 0; pos < total; pos++) {
       const tile = document.createElement('div');
@@ -303,12 +314,32 @@
     };
   }
 
+  function showModal(message, duration = 1200) {
+    if (!modal || !modalContent) return;
+    modalContent.textContent = message;
+    modal.classList.add('show');
+    clearTimeout(modalTimer);
+    modalTimer = setTimeout(() => {
+      modal.classList.remove('show');
+      modalTimer = null;
+    }, duration);
+  }
+
   function updateStatus(message) {
     if (message) {
-      statusEl.textContent = message;
+      // Keep aria-live updated but render feedback via modal to avoid layout shift
+      if (statusEl) statusEl.textContent = message;
+      showModal(message);
       return;
     }
-    statusEl.textContent = isSolved() ? 'Solved! 🎉' : '';
+    // Default/passive state (no modal): just keep aria-live up to date
+    if (statusEl) statusEl.textContent = isSolved() ? 'Solved! 🎉' : '';
+  }
+
+  function updateTitle() {
+    if (!titleEl) return;
+    const which = currentImage === 2 ? 'Sid Puzzle 2' : 'Sid Puzzle 1';
+    titleEl.textContent = `${which} (100 pcs.)`;
   }
 
   // (Shuffle Again removed per UX simplification)
@@ -368,6 +399,7 @@
       }
       updateStatus(msg);
       pauseTimer();
+      updateNavButtons();
     } else if (!timerRunning) {
       // If not already running (e.g., loaded mid-game but paused), start on first move
       startTimer();
@@ -440,6 +472,16 @@
   }
 
   // UI controls
+  // Titlebar Back/Next buttons
+  function updateNavButtons() {
+    if (backBtn) backBtn.disabled = currentImage <= 1;
+    if (nextBtnTop) {
+      const atEnd = currentImage >= TOTAL_PUZZLES;
+      // Only puzzle 2 requires unlock in current design
+      const nextLocked = (currentImage === 1 && !unlocked2);
+      nextBtnTop.disabled = atEnd || nextLocked;
+    }
+  }
   // Localhost-only Cheat button to instantly solve (and unlock next puzzle)
   (function addCheatIfLocal() {
     const host = window.location.hostname;
@@ -447,11 +489,14 @@
     if (!isLocal) return;
     const controls = document.querySelector('.controls');
     if (!controls) return;
+    const toggles = controls.querySelector('.toggles');
     const cheatBtn = document.createElement('button');
     cheatBtn.type = 'button';
     cheatBtn.id = 'cheatBtn';
     cheatBtn.textContent = 'Cheat';
-    controls.insertBefore(cheatBtn, (resetBtn && resetBtn.nextSibling) || null);
+    // Place Cheat in the center with the checkbox controls
+    if (toggles) toggles.appendChild(cheatBtn);
+    else controls.insertBefore(cheatBtn, (resetBtn && resetBtn) || null);
     cheatBtn.addEventListener('click', () => {
       // Complete the puzzle by assigning correct piece to each tile position
       pushUndo();
@@ -465,6 +510,7 @@
       }
       updateStatus(msg);
       pauseTimer();
+      updateNavButtons();
       saveState();
     });
   })();
@@ -485,6 +531,37 @@
       saveState();
     });
   }
+  // Back/Next button handlers
+  if (backBtn) {
+    backBtn.addEventListener('click', () => {
+      if (currentImage <= 1) return;
+      pushUndo();
+      try { localStorage.removeItem(STORAGE_KEY); } catch (_) {}
+      if (previewToggle) previewToggle.checked = false;
+      if (edgeToggle) edgeToggle.checked = false;
+      board.classList.remove('preview', 'edges', 'solved');
+      currentImage = Math.max(1, currentImage - 1);
+      createBoard();
+      updateStatus(`Back: Puzzle ${currentImage}`);
+      setTimeout(() => updateStatus(''), 800);
+    });
+  }
+  if (nextBtnTop) {
+    nextBtnTop.addEventListener('click', () => {
+      if (currentImage >= TOTAL_PUZZLES) return; // no more puzzles
+      // For current design, only moving 1->2 may be locked
+      if (currentImage === 1 && !unlocked2) return;
+      pushUndo();
+      try { localStorage.removeItem(STORAGE_KEY); } catch (_) {}
+      if (previewToggle) previewToggle.checked = false;
+      if (edgeToggle) edgeToggle.checked = false;
+      board.classList.remove('preview', 'edges', 'solved');
+      currentImage = Math.min(TOTAL_PUZZLES, currentImage + 1);
+      createBoard();
+      updateStatus(`Next: Puzzle ${currentImage}`);
+      setTimeout(() => updateStatus(''), 800);
+    });
+  }
   if (resetBtn) {
     resetBtn.addEventListener('click', () => {
       pushUndo();
@@ -492,10 +569,6 @@
       if (previewToggle) previewToggle.checked = false;
       if (edgeToggle) edgeToggle.checked = false;
       board.classList.remove('preview', 'edges', 'solved');
-      // If second puzzle has been unlocked and we're on the first, switch to #2
-      if (unlocked2 && currentImage === 1) {
-        currentImage = 2;
-      }
       createBoard();
       updateStatus('Reset');
       setTimeout(() => updateStatus(''), 800);
