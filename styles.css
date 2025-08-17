@@ -309,6 +309,40 @@ button:disabled:active {
   100% { box-shadow: 0 0 0 16px rgba(123, 226, 123, 0); }
 }
 
+/* Correct placement pulse */
+.tile.correct-pulse {
+  animation: pulseCorrect 420ms ease-out;
+}
+@keyframes pulseCorrect {
+  0% { transform: scale(1); box-shadow: 0 0 0 0 rgba(123, 226, 123, 0); }
+  40% { transform: scale(1.06); box-shadow: 0 0 0 3px rgba(123, 226, 123, 0.6); }
+  100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(123, 226, 123, 0); }
+}
+
+/* Sparkle particles for correct placement */
+.board .sparkle {
+  position: absolute;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: radial-gradient(circle, #caffca 0%, #7be27b 60%, rgba(123, 226, 123, 0.1) 100%);
+  pointer-events: none;
+  z-index: 4; /* above overlays/edges */
+  opacity: 0;
+  animation: sparkleFly 700ms ease-out forwards;
+  will-change: transform, opacity;
+}
+@keyframes sparkleFly {
+  0%   { transform: translate(0, 0) scale(0.8); opacity: 1; }
+  100% { transform: translate(var(--dx), var(--dy)) scale(1.4); opacity: 0; }
+}
+
+/* Accessibility: respect reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  .tile.correct-pulse { animation: none; }
+  .board .sparkle { display: none !important; }
+}
+
 /* Modal overlay */
 .modal {
   position: fixed;

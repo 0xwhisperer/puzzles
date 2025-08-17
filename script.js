@@ -43,6 +43,45 @@
     return `${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
   }
 
+  // ---- Micro-interactions: correct placement pulse + sparkles ----
+  function prefersReducedMotion() {
+    try {
+      return window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    } catch (_) { return false; }
+  }
+
+  function pulseTile(tile) {
+    if (!tile) return;
+    tile.classList.add('correct-pulse');
+    // Remove the class after animation completes
+    setTimeout(() => tile.classList.remove('correct-pulse'), 420);
+  }
+
+  function spawnSparklesAtTile(tile, count = 3) {
+    if (!tile || prefersReducedMotion()) return;
+    const bRect = board.getBoundingClientRect();
+    const tRect = tile.getBoundingClientRect();
+    const cx = tRect.left - bRect.left + tRect.width / 2;
+    const cy = tRect.top - bRect.top + tRect.height / 2;
+    for (let i = 0; i < count; i++) {
+      const p = document.createElement('div');
+      p.className = 'sparkle';
+      // Small random offset around center
+      const jitterX = (Math.random() - 0.5) * (tRect.width * 0.2);
+      const jitterY = (Math.random() - 0.5) * (tRect.height * 0.2);
+      p.style.left = `${cx + jitterX - 3}px`;
+      p.style.top = `${cy + jitterY - 3}px`;
+      // Random travel vector
+      const dx = (Math.random() - 0.5) * 22;
+      const dy = -12 - Math.random() * 14;
+      p.style.setProperty('--dx', `${dx}px`);
+      p.style.setProperty('--dy', `${dy}px`);
+      board.appendChild(p);
+      // Auto-remove after animation
+      setTimeout(() => { if (p.parentNode) p.parentNode.removeChild(p); }, 700);
+    }
+  }
+
   function renderTimer() {
     if (!timerEl) return;
     const now = Date.now();
@@ -465,9 +504,24 @@
     e.preventDefault();
     this.classList.remove('over');
     if (!dragSrc || dragSrc === this) return;
+    const a = dragSrc; // source tile
+    const b = this;    // drop target tile
     pushUndo();
-    swapTilePieces(dragSrc, this);
-    dragSrc.classList.remove('dragging');
+    swapTilePieces(a, b);
+    // Celebrate newly correct placements (before we clear dragSrc)
+    const newlyCorrect = [];
+    if (a && a.dataset.piece === a.dataset.correct) newlyCorrect.push(a);
+    if (b && b.dataset.piece === b.dataset.correct) newlyCorrect.push(b);
+    if (newlyCorrect.length) {
+      for (const t of newlyCorrect) {
+        pulseTile(t);
+        spawnSparklesAtTile(t, 3);
+      }
+      if (navigator.vibrate) {
+        try { navigator.vibrate(12); } catch (_) {}
+      }
+    }
+    a.classList.remove('dragging');
     dragSrc = null;
 
     updateJoins();
@@ -611,6 +665,19 @@
     // Mirror onDrop logic
     pushUndo();
     swapTilePieces(src, dropTarget);
+    // Celebrate newly correct placements
+    const newlyCorrect = [];
+    if (src && src.dataset.piece === src.dataset.correct) newlyCorrect.push(src);
+    if (dropTarget && dropTarget.dataset.piece === dropTarget.dataset.correct) newlyCorrect.push(dropTarget);
+    if (newlyCorrect.length) {
+      for (const t of newlyCorrect) {
+        pulseTile(t);
+        spawnSparklesAtTile(t, 3);
+      }
+      if (navigator.vibrate) {
+        try { navigator.vibrate(12); } catch (_) {}
+      }
+    }
     updateJoins();
     const solved = isSolved();
     board.classList.toggle('solved', solved);
