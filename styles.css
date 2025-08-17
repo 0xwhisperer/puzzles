@@ -36,6 +36,7 @@ h1 {
   margin: 0 0 12px;
   font-weight: 700;
   letter-spacing: 0.2px;
+  text-align: center;
   background: linear-gradient(90deg, #fff, #cfd8ff 40%, #a3b7ff);
   -webkit-background-clip: text;
   background-clip: text;
@@ -133,9 +134,11 @@ button:active { transform: translateY(1px); }
 /* Per-side subtle edges */
 .tile > .frame {
   position: absolute;
-  inset: 0;
+  /* Inset by the border width to avoid being clipped by the board's rounded corners */
+  inset: 0.5px;
   pointer-events: none;
-  border-radius: 4px;
+  /* Keep visual corner radius consistent with the tile after insetting */
+  border-radius: 3.5px;
   border: 0.5px solid var(--stroke);
 }
 
