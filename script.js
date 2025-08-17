@@ -325,11 +325,11 @@
     }, duration);
   }
 
-  function updateStatus(message) {
+  function updateStatus(message, duration) {
     if (message) {
       // Keep aria-live updated but render feedback via modal to avoid layout shift
       if (statusEl) statusEl.textContent = message;
-      showModal(message);
+      showModal(message, typeof duration === 'number' ? duration : 1200);
       return;
     }
     // Default/passive state (no modal): just keep aria-live up to date
@@ -393,11 +393,13 @@
     board.classList.toggle('solved', solved);
     if (solved) {
       let msg = 'Solved! 🎉';
+      let dur = undefined;
       if (currentImage === 1 && !unlocked2) {
         unlocked2 = true;
-        msg = 'Solved! 🎉 Unlocked Puzzle 2';
+        msg = "Solved. You've unlocked a new puzzle! Click the Next button to see your next puzzle.";
+        dur = 5000;
       }
-      updateStatus(msg);
+      updateStatus(msg, dur);
       pauseTimer();
       updateNavButtons();
     } else if (!timerRunning) {
@@ -480,6 +482,7 @@
       // Only puzzle 2 requires unlock in current design
       const nextLocked = (currentImage === 1 && !unlocked2);
       nextBtnTop.disabled = atEnd || nextLocked;
+      nextBtnTop.textContent = nextLocked ? 'Locked' : 'Next';
     }
   }
   // Localhost-only Cheat button to instantly solve (and unlock next puzzle)
@@ -504,11 +507,13 @@
       updateJoins();
       board.classList.add('solved');
       let msg = 'Solved! 🎉';
+      let dur = undefined;
       if (currentImage === 1 && !unlocked2) {
         unlocked2 = true;
-        msg = 'Solved! 🎉 Unlocked Puzzle 2';
+        msg = "Solved. You've unlocked a new puzzle! Click the Next button to see your next puzzle.";
+        dur = 3000;
       }
-      updateStatus(msg);
+      updateStatus(msg, dur);
       pauseTimer();
       updateNavButtons();
       saveState();
@@ -563,15 +568,24 @@
     });
   }
   if (resetBtn) {
-    resetBtn.addEventListener('click', () => {
+    resetBtn.addEventListener('click', (e) => {
+      const relock = !!e.altKey; // Option/Alt-click to relock next puzzle for testing
       pushUndo();
       try { localStorage.removeItem(STORAGE_KEY); } catch (_) {}
       if (previewToggle) previewToggle.checked = false;
       if (edgeToggle) edgeToggle.checked = false;
       board.classList.remove('preview', 'edges', 'solved');
+      if (relock) {
+        unlocked2 = false;
+        currentImage = 1;
+      }
       createBoard();
-      updateStatus('Reset');
-      setTimeout(() => updateStatus(''), 800);
+      if (relock) {
+        updateStatus('Relocked next puzzle for testing', 1500);
+      } else {
+        updateStatus('Reset');
+        setTimeout(() => updateStatus(''), 800);
+      }
     });
   }
 
