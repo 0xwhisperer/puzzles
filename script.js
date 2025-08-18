@@ -324,38 +324,22 @@
       const boardTimer = saved.boards && saved.boards[boardKey] ? saved.boards[boardKey] : null;
       if (boardTimer && ("tElapsedMs" in boardTimer || "tRunning" in boardTimer)) {
         const tElapsed = Math.max(0, Number(boardTimer.tElapsedMs) || 0);
-        const tRunning = !!boardTimer.tRunning;
+        // Always pause on load; start only on first user move
         timerElapsedMs = tElapsed;
-        if (tRunning) {
-          // Resume from current time to avoid double-counting past elapsed
-          timerStartAt = nowTs;
-          timerRunning = true;
-          clearInterval(timerInterval);
-          timerInterval = setInterval(renderTimer, 250);
-        } else {
-          timerRunning = false;
-          timerStartAt = 0;
-          clearInterval(timerInterval);
-          timerInterval = null;
-        }
+        timerRunning = false;
+        timerStartAt = 0;
+        clearInterval(timerInterval);
+        timerInterval = null;
         renderTimer();
       } else if (boardTimer) {
         // Fallback to legacy/global timer
         const savedElapsed = Math.max(0, Number(saved.elapsedMs) || 0);
-        const wasRunning = !!saved.running;
-        if (wasRunning) {
-          timerElapsedMs = savedElapsed;
-          timerStartAt = nowTs;
-          timerRunning = true;
-          clearInterval(timerInterval);
-          timerInterval = setInterval(renderTimer, 250);
-        } else {
-          timerRunning = false;
-          timerStartAt = 0;
-          timerElapsedMs = savedElapsed;
-          clearInterval(timerInterval);
-          timerInterval = null;
-        }
+        // Always pause on load; start only on first user move
+        timerElapsedMs = savedElapsed;
+        timerRunning = false;
+        timerStartAt = 0;
+        clearInterval(timerInterval);
+        timerInterval = null;
         renderTimer();
       } else {
         // No board exists yet for this puzzle: ensure timer is reset and stopped
