@@ -12,6 +12,10 @@
   const modal = document.getElementById('modal');
   const modalContent = document.getElementById('modalContent');
   let modalTimer = null;
+  // Layout refs for dynamic sizing
+  const appEl = document.querySelector('.app');
+  const titlebarEl = document.querySelector('.titlebar');
+  const controlsEl = document.querySelector('.controls');
 
   board.style.setProperty('--n', String(N));
 
@@ -121,6 +125,26 @@
     timerStartAt = 0;
     timerElapsedMs = 0;
     if (start) startTimer(); else renderTimer();
+  }
+
+  // ---- Responsive sizing: keep the square board within the viewport ----
+  function ensureBoardFits() {
+    if (!appEl || !board) return;
+    const appStyles = getComputedStyle(appEl);
+    const padH = parseFloat(appStyles.paddingLeft) + parseFloat(appStyles.paddingRight);
+    const padV = parseFloat(appStyles.paddingTop) + parseFloat(appStyles.paddingBottom);
+    const tbH = titlebarEl ? titlebarEl.offsetHeight : 0;
+    const tbMB = titlebarEl ? parseFloat(getComputedStyle(titlebarEl).marginBottom) : 0;
+    const ctrH = controlsEl ? controlsEl.offsetHeight : 0;
+    const ctrMB = controlsEl ? parseFloat(getComputedStyle(controlsEl).marginBottom) : 0;
+    const chromeV = padV + tbH + tbMB + ctrH + ctrMB;
+    const vw = window.innerWidth;
+    const vh = window.innerHeight;
+    const cardW = Math.min(vw, 720);
+    const availableW = cardW - padH;
+    const availableH = vh - chromeV;
+    const size = Math.max(260, Math.min(availableW, availableH));
+    board.style.width = `${size}px`;
   }
 
   // ---- Persistence (localStorage) ----
@@ -394,6 +418,8 @@
     // Save initial state so refresh persists current layout
     saveState();
     initialized = true;
+    // Adjust board size to fit viewport
+    ensureBoardFits();
   }
 
   function setTilePiece(tile, pieceIndex) {
@@ -838,6 +864,7 @@
   }
   // Keep button labels responsive to viewport changes
   window.addEventListener('resize', updateNavButtons);
+  window.addEventListener('resize', ensureBoardFits);
   // Localhost-only Cheat button to instantly solve (and unlock next puzzle)
   (function addCheatIfLocal() {
     const host = window.location.hostname;
@@ -1000,6 +1027,7 @@
 
   // Initialize
   createBoard();
+  ensureBoardFits();
   // reflect initial toggle states if any were persisted by the browser
   if (previewToggle && previewToggle.checked) board.classList.add('preview');
   if (edgeToggle && edgeToggle.checked) board.classList.add('edges');

@@ -11,6 +11,8 @@
   --control-col: 96px;
 }
 * { box-sizing: border-box; }
+/* Lock scrolling globally; app will fit viewport */
+html, body { overflow: hidden; overscroll-behavior: none; }
 body {
   margin: 0;
   font: 16px/1.4 system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji", "Segoe UI Emoji";
@@ -24,14 +26,17 @@ body {
 }
 
 .app {
-  display: inline-block; /* shrink to content width */
-  max-width: 96vw;       /* guard against overflow on small screens */
+  display: block;
+  width: min(100svw, 720px);  /* fill viewport width up to desktop target */
+  max-width: 100svw;
   padding: 20px;
   background: var(--glass);
   border: 1px solid rgba(255,255,255,0.08);
   border-radius: 16px;
   box-shadow: 0 10px 30px rgba(0,0,0,0.35), inset 0 0 0 1px rgba(255,255,255,0.04);
   backdrop-filter: blur(8px);
+  /* Estimated vertical space used by titlebar + controls + paddings/margins */
+  --chrome-h: 180px;
 }
 
 h1 {
@@ -52,8 +57,8 @@ h1 {
   justify-content: space-between;
   gap: 12px;
   margin: 0 auto 12px;
-  /* Match board/controls width */
-  width: clamp(260px, 90vmin, 720px);
+  /* Match board/controls width (card content width) */
+  width: 100%;
 }
 .titlebar h1 {
   flex: 1;
@@ -78,7 +83,7 @@ h1 {
   margin: 0 auto 12px; /* center the row and add spacing below */
   flex-wrap: nowrap;
   /* Match board width for clean alignment with titlebar */
-  width: clamp(260px, 90vmin, 720px);
+  width: 100%;
 }
 .controls .toggles {
   display: flex;
@@ -157,8 +162,8 @@ button:disabled:active {
   --n: 10; /* updated by JS if needed */
   position: relative;
   margin: 0 auto; /* center board inside the card */
-  /* clamp to stay usable on tiny screens but not exceed desktop target */
-  width: clamp(260px, 90vmin, 720px);
+  /* Fill card width but also respect viewport height so it never goes off-screen */
+  width: min(100%, calc(100svh - var(--chrome-h)));
   aspect-ratio: 1 / 1; /* square board, image is scaled to fit */
   display: grid;
   grid-template-columns: repeat(var(--n), 1fr);
@@ -168,8 +173,8 @@ button:disabled:active {
   overflow: hidden;
   box-shadow: 0 10px 30px rgba(0,0,0,0.45), 0 0 0 1px rgba(255,255,255,0.06) inset,
     0 0 0 1px rgba(110,164,255,0.12);
-  /* Improve touch dragging UX */
-  touch-action: pan-x pan-y;    /* allow native scroll until JS begins drag */
+  /* Disable native scroll/zoom gestures on the board to keep drags precise */
+  touch-action: none;
   user-select: none;            /* standard property */
   -webkit-user-select: none;    /* avoid text/image selection on iOS */
 }
