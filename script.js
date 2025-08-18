@@ -228,6 +228,8 @@
     const solved = isSolved();
     board.classList.toggle('solved', solved);
     updateStatus(solved ? 'Solved! 🎉' : '');
+    // If solved via undo/redo or restored snapshot, ensure progression unlocks
+    ensureProgressionUnlockedIfSolved();
     saveState();
   }
 
@@ -399,6 +401,8 @@
     const solved = isSolved();
     board.classList.toggle('solved', solved);
     updateStatus();
+    // If solved on load, ensure progression unlocks before persisting
+    ensureProgressionUnlockedIfSolved();
     // Save initial state so refresh persists current layout
     saveState();
     initialized = true;
@@ -432,6 +436,18 @@
 
   function isSolved() {
     return tiles.every(t => t.dataset.piece === t.dataset.correct);
+  }
+
+  // Ensure progression unlocks if the current board is solved outside of direct drop handlers
+  function ensureProgressionUnlockedIfSolved() {
+    if (!isSolved()) return;
+    let changed = false;
+    if (currentImage === 1 && !unlocked2) { unlocked2 = true; changed = true; }
+    if (currentImage === 2 && !unlocked3) { unlocked3 = true; changed = true; }
+    if (changed) {
+      updateNavButtons();
+      saveState();
+    }
   }
 
   // Edge helpers
