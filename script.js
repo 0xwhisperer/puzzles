@@ -492,9 +492,9 @@
 
   function updateTitle() {
     if (!titleEl) return;
-    let which = 'Sid Puzzle 1';
-    if (currentImage === 2) which = 'Sid Puzzle 2';
-    if (currentImage === 3) which = 'Catman Puzzle';
+    let which = 'Sid 1';
+    if (currentImage === 2) which = 'Sid 2';
+    if (currentImage === 3) which = 'Catman';
     titleEl.textContent = `${which} (100 pcs.)`;
   }
 
